@@ -1,3 +1,7 @@
+// First do this and ignore the result: dotnet build --configuration Release
+// Then to build do: dotnet fake run build.fsx -e configuration=Release
+// And to release do: dotnet fake run build.fsx -e configuration=Release -t Release
+
 #r "paket:
 source release/dotnetcore
 source https://api.nuget.org/v3/index.json
@@ -137,7 +141,7 @@ let docsDomain =
 let fromArtifacts = not <| String.isNullOrEmpty artifactsDir
 let apiKey = releaseSecret "<nugetkey>" "NUGET_KEY"
 let chocoKey = releaseSecret "<chocokey>" "CHOCOLATEY_API_KEY"
-let githubToken = releaseSecret "<githubtoken>" "TOKEN_GITHUB"
+let githubToken = releaseSecret "<githubtoken>" "GITHUB_TOKEN"
 
 do Environment.setEnvironVar "COREHOST_TRACE" "0"
 
@@ -450,9 +454,15 @@ let rec nugetPush tries nugetPackage =
     try
         if not <| String.IsNullOrEmpty apiKey.Value then
             let quoteString str = sprintf "\"%s\"" str
-            
-            let args = sprintf "push %s %s -Source %s" (quoteString nugetPackage) (quoteString apiKey.Value) (quoteString nugetSource)
-            
+
+            let args =
+                sprintf
+                    "push %s %s -Source %s %s"
+                    (quoteString nugetPackage)
+                    (quoteString apiKey.Value)
+                    (quoteString nugetSource)
+                    (if ignore_conflict then "-SkipDuplicate" else "")
+
             let errors = System.Collections.Generic.List<string>()
             let results = System.Collections.Generic.List<string>()
 

@@ -19,7 +19,7 @@ jobs:
             - name: Setup .NET 6
               uses: actions/setup-dotnet@v4
               with:
-                  dotnet-version: '6.0.101'
+                  dotnet-version: '6.0.301'
             - name: Restore dotnet tools
               run: dotnet tool restore
             - name: remove current fake runner tool
@@ -31,7 +31,7 @@ jobs:
             - name: Build
               run: dotnet fake build -t Release_BuildAndTest --parallel 3
             - name: publish build artifacts
-              uses: actions/upload-artifact@v3
+              uses: actions/upload-artifact@v4
               with:
                   name: fake-artifacts
                   path: release/artifacts
@@ -43,6 +43,7 @@ jobs:
                   GIT_DIRECTORY: ${{github.workspace}}
                   CHOCOLATEY_API_KEY: ${{ secrets.CHOCOLATEY_API_KEY }}
                   DOCS_DOMAIN: ${{ secrets.DOCS_DOMAIN }}
+                  IGNORE_CONFLICT: true
                   NUGET_KEY: ${{ secrets.NUGET_KEY }}
                   NUGET_SOURCE: ${{ secrets.NUGET_SOURCE }}
                   RELEASE_USER_GITHUB: ${{ secrets.RELEASE_USER_GITHUB }}

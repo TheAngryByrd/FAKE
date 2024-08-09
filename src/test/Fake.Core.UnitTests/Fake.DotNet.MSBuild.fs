@@ -6,6 +6,26 @@ open Expecto
 
 [<Tests>]
 let tests =
+    let flagsTestCase name changeBuildArgs (expected: string) =
+        testCase name
+        <| fun _ ->
+            let _, cmdLine = MSBuild.buildArgs changeBuildArgs
+
+            let expected =
+                let trimmed = expected.Replace("  ", " ").Trim()
+
+                if BuildServer.ansiColorSupport then
+                    $"%s{trimmed} /clp:ForceConsoleColor".Trim()
+                else
+                    trimmed
+
+            let expected = $"/m /nodeReuse:False {expected} /p:RestorePackages=False".Trim()
+
+            Expect.equal
+                (cmdLine.Replace("  ", " "))
+                (expected.Replace("  ", " "))
+                $"Expected a given cmdLine '{expected}', but got '{cmdLine}'."
+
     testList
         "Fake.DotNet.MSBuild.Tests"
         [ testCase "Test that we can create simple msbuild cmdline"
@@ -17,12 +37,9 @@ let tests =
                           Properties = [ "OutputPath", "C:\\Test\\" ] })
 
               let expected =
-                  if Environment.isUnix then
-                      "/p:RestorePackages=False /p:OutputPath=C:%5CTest%5C"
-                  else
-                      "/m /nodeReuse:False /p:RestorePackages=False /p:OutputPath=C:%5CTest%5C"
+                  "/m /nodeReuse:False /p:RestorePackages=False /p:OutputPath=C:%5CTest%5C"
 
-              Expect.equal cmdLine expected "Expected a given cmdline."
+              Expect.equal (cmdLine.Replace("  ", " ")) (expected.Replace("  ", " ")) "Expected a given cmdline."
           testCase "Test that /restore is included #2160"
           <| fun _ ->
               let _, cmdLine =
@@ -31,10 +48,20 @@ let tests =
                           ConsoleLogParameters = []
                           DoRestore = true })
 
-              let expected =
-                  if Environment.isUnix then
-                      "/restore /p:RestorePackages=False"
-                  else
-                      "/restore /m /nodeReuse:False /p:RestorePackages=False"
+              let expected = "/restore /m /nodeReuse:False /p:RestorePackages=False"
 
-              Expect.equal cmdLine expected "Expected a given cmdline." ]
+              Expect.equal (cmdLine.Replace("  ", " ")) (expected.Replace("  ", " ")) "Expected a given cmdline."
+
+          flagsTestCase "/tl:auto doesn't ouput anything (1)" id ""
+          flagsTestCase
+              "/tl:auto doesn't ouput anything (2)"
+              (fun args -> { args with TerminalLogger = MSBuildTerminalLoggerOption.Auto })
+              ""
+          flagsTestCase
+              "/tl:on does ouput"
+              (fun args -> { args with TerminalLogger = MSBuildTerminalLoggerOption.On })
+              "/tl:on"
+          flagsTestCase
+              "/tl:off does ouput"
+              (fun args -> { args with TerminalLogger = MSBuildTerminalLoggerOption.Off })
+              "/tl:off" ]
